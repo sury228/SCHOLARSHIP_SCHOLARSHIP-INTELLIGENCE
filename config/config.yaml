@@ -1,0 +1,40 @@
+# Scholarship Intelligence Crawler - Configuration
+
+crawler:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  timeout_seconds: 15
+  max_search_results: 10
+  seed_urls:
+    - "https://scholarships.gov.in/post_matric_2026"
+    - "https://www.tatatrusts.org/education-grant-2026"
+    - "https://scholarships.gov.in/"
+    - "https://www.ugc.gov.in/"
+
+
+search_keywords:
+  - "Indian student scholarship 2026 apply online"
+  - "government scholarship engineering medical India"
+  - "merit cum means scholarship for Indian students"
+  - "CSR scholarship female students India 2026"
+  - "post matric scholarship state government India"
+
+llm:
+  model_name: "qwen2.5:3b"
+  ollama_endpoint: "http://localhost:11434"
+  temperature: 0.1
+  timeout: 30
+
+scoring_weights:
+  official_source_domain: 25
+  active_live_page: 20
+  critical_fields_present: 15
+  evidence_traceability: 20
+  valid_application_link: 10
+  timeline_validity: 10
+
+status_thresholds:
+  verified_min_score: 95.0
+  expiring_soon_days: 7
+
+database:
+  db_path: "scholarships.db"
