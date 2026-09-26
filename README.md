@@ -25,9 +25,9 @@ An automated crawler and verification engine built for Indian students to discov
    * Logs modifications (such as extended deadlines or updated amounts) into an audit history table.
    * Categorizes listing statuses into `ACTIVE`, `EXPIRING SOON` (within 7 days), `EXPIRED`, or `NO LONGER VERIFIABLE`.
 
-4. **Local LLM Extraction with Regex Fallback**
-   * Uses local Ollama (`qwen2.5:3b`) for structured JSON extraction.
-   * Falls back to a deterministic regex parser if the LLM server is offline or unreachable.
+4. **High-Speed LLM Extraction via Groq (with Ollama & Regex Fallback)**
+   * Uses **Groq API** (`llama-3.3-70b-versatile`) with native JSON mode for blazing fast, highly accurate extraction.
+   * Seamlessly falls back to local Ollama or deterministic regex parsing if no API key is provided or when offline.
 
 ---
 
@@ -35,9 +35,11 @@ An automated crawler and verification engine built for Indian students to discov
 
 ```
 scholarship_crawler/
+├── .env                     # Private environment variables (GROQ_API_KEY)
+├── .env.example             # Template for environment configuration
 ├── config/
-│   ├── config.yaml          # Seed URLs, search keywords, scoring weights
-│   └── settings.py          # Configuration loader
+│   ├── config.yaml          # Seed URLs, search keywords, LLM provider & scoring weights
+│   └── settings.py          # Configuration loader & .env reader
 ├── database/
 │   ├── db_manager.py        # SQLite / SQLAlchemy database manager
 │   └── models.py            # Database tables schema
@@ -47,7 +49,7 @@ scholarship_crawler/
 │   └── source_classifier.py # Domain category classifier (.gov.in, .ac.in, CSR)
 ├── extractor/
 │   ├── prompt_templates.py  # Strict extraction prompts
-│   └── llm_extractor.py     # Local LLM integration + regex fallback
+│   └── llm_extractor.py     # Groq API + Ollama + regex fallback extractor
 ├── verifier/
 │   ├── evidence_tracer.py   # Substring evidence verification
 │   └── verification_engine.py # Deterministic confidence scoring
@@ -68,13 +70,20 @@ scholarship_crawler/
 pip install -r requirements.txt
 ```
 
-### 2. Run the Crawler Pipeline
+### 2. Configure Your Groq API Key
+Add your Groq API key to the [`.env`](.env) file:
+```env
+GROQ_API_KEY=gsk_your_groq_api_key_here
+```
+*(You can get a free Groq API key at [console.groq.com/keys](https://console.groq.com/keys). If left empty, the pipeline will automatically fall back to the built-in rule-based extractor.)*
+
+### 3. Run the Crawler Pipeline
 To crawl seed sites, extract scholarship records, verify evidence, and save results to SQLite:
 ```bash
 python pipeline.py
 ```
 
-### 3. Launch the Dashboard
+### 4. Launch the Dashboard
 To start the Streamlit web app in your browser:
 ```bash
 streamlit run dashboard/app.py

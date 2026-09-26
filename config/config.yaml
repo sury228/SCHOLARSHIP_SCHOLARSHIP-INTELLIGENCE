@@ -19,7 +19,9 @@ search_keywords:
   - "post matric scholarship state government India"
 
 llm:
-  model_name: "qwen2.5:3b"
+  provider: "groq" # Options: "groq" (recommended), "ollama"
+  model_name: "llama-3.3-70b-versatile" # Fast & high-accuracy on Groq
+  groq_endpoint: "https://api.groq.com/openai/v1/chat/completions"
   ollama_endpoint: "http://localhost:11434"
   temperature: 0.1
   timeout: 30

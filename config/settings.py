@@ -4,19 +4,52 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = BASE_DIR / "config" / "config.yaml"
+ENV_PATH = BASE_DIR / ".env"
+
+def load_env_file(env_path: Path = ENV_PATH) -> None:
+    """Loads environment variables from .env file into os.environ."""
+    if not env_path.exists():
+        return
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(env_path)
+    except ImportError:
+        # Fallback manual parser if python-dotenv is not yet installed
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, val = line.split("=", 1)
+                    key = key.strip()
+                    val = val.strip().strip("'\"")
+                    if key and key not in os.environ:
+                        os.environ[key] = val
+        except Exception:
+            pass
+
+# Load .env automatically upon importing settings
+load_env_file()
 
 def load_config(config_path: Path = CONFIG_PATH) -> dict:
-    """Loads configuration settings from YAML file with sensible fallbacks."""
+    """Loads configuration settings from YAML file with sensible fallbacks and env injection."""
     if not config_path.exists():
-        return get_default_config()
-    
-    with open(config_path, "r", encoding="utf-8") as f:
-        try:
-            config = yaml.safe_load(f)
-            return config or get_default_config()
-        except Exception as e:
-            print(f"[Warning] Failed to parse config YAML: {e}. Using defaults.")
-            return get_default_config()
+        config = get_default_config()
+    else:
+        with open(config_path, "r", encoding="utf-8") as f:
+            try:
+                config = yaml.safe_load(f) or get_default_config()
+            except Exception as e:
+                print(f"[Warning] Failed to parse config YAML: {e}. Using defaults.")
+                config = get_default_config()
+
+    # Inject GROQ_API_KEY from environment if available
+    llm_conf = config.setdefault("llm", {})
+    if not llm_conf.get("api_key"):
+        llm_conf["api_key"] = os.environ.get("GROQ_API_KEY", "")
+
+    return config
 
 def get_default_config() -> dict:
     return {
@@ -33,8 +66,11 @@ def get_default_config() -> dict:
             "Indian student scholarship apply online"
         ],
         "llm": {
-            "model_name": "qwen2.5:3b",
+            "provider": "groq",
+            "model_name": "llama-3.3-70b-versatile",
+            "groq_endpoint": "https://api.groq.com/openai/v1/chat/completions",
             "ollama_endpoint": "http://localhost:11434",
+            "api_key": os.environ.get("GROQ_API_KEY", ""),
             "temperature": 0.1,
             "timeout": 30
         },

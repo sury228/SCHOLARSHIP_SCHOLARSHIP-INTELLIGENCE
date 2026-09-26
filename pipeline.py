@@ -35,9 +35,15 @@ class ScholarshipPipeline:
             user_agent=self.config["crawler"].get("user_agent"),
             timeout=self.config["crawler"].get("timeout_seconds", 15)
         )
+        llm_conf = self.config.get("llm", {})
+        provider = llm_conf.get("provider", "groq")
+        endpoint = llm_conf.get("groq_endpoint") if provider == "groq" else llm_conf.get("ollama_endpoint")
         self.extractor = LLMExtractor(
-            model_name=self.config["llm"].get("model_name", "qwen2.5:3b"),
-            endpoint=self.config["llm"].get("ollama_endpoint", "http://localhost:11434")
+            provider=provider,
+            model_name=llm_conf.get("model_name"),
+            api_key=llm_conf.get("api_key"),
+            endpoint=endpoint,
+            timeout=llm_conf.get("timeout", 30.0)
         )
         self.verifier = VerificationEngine(
             scoring_weights=self.config.get("scoring_weights"),

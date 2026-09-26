@@ -1,35 +1,101 @@
 import json
 import logging
+import os
 import re
 import requests
-from typing import Dict
+from typing import Dict, Optional, List
 from extractor.prompt_templates import SYSTEM_PROMPT, EXTRACTION_PROMPT
 
 logger = logging.getLogger(__name__)
 
 class LLMExtractor:
-    def __init__(self, model_name: str = "qwen2.5:3b", endpoint: str = "http://localhost:11434"):
-        self.model_name = model_name
-        self.endpoint = endpoint.rstrip("/")
+    def __init__(
+        self,
+        provider: str = "groq",
+        model_name: str = "llama-3.3-70b-versatile",
+        api_key: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        timeout: float = 30.0
+    ):
+        self.provider = (provider or "groq").lower()
+        self.model_name = model_name or ("llama-3.3-70b-versatile" if self.provider == "groq" else "qwen2.5:3b")
+        self.api_key = api_key or os.environ.get("GROQ_API_KEY", "").strip()
+        self.timeout = timeout
+
+        if endpoint:
+            self.endpoint = endpoint.rstrip("/")
+        elif self.provider == "groq":
+            self.endpoint = "https://api.groq.com/openai/v1/chat/completions"
+        else:
+            self.endpoint = "http://localhost:11434"
 
     def extract_scholarship_data(self, page_data: Dict) -> Dict:
         """
         Extracts structured scholarship JSON from scraped web page data.
-        Uses local Ollama LLM if available; falls back to regex extraction if unreachable.
+        Tries configured LLM provider (Groq or Ollama) with fallback to regex extraction.
         """
         title = page_data.get("title", "")
         url = page_data.get("url", "")
         text = page_data.get("cleaned_text", "")
+        links = page_data.get("links", [])
 
-        # Try local LLM extraction via Ollama API
-        llm_result = self._call_ollama(title, url, text)
+        llm_result = None
+
+        if self.provider == "groq":
+            if self.api_key:
+                logger.info(f"Extracting with Groq LLM ({self.model_name}) for {url}...")
+                llm_result = self._call_groq(title, url, text)
+            else:
+                logger.warning("Groq provider selected but GROQ_API_KEY is not set in .env. Falling back to regex.")
+        elif self.provider == "ollama":
+            logger.info(f"Extracting with local Ollama LLM ({self.model_name}) for {url}...")
+            llm_result = self._call_ollama(title, url, text)
+
         if llm_result:
-            return llm_result
+            return self._normalize_extracted_data(llm_result, title, url, links)
 
-        logger.info(f"Ollama LLM unreachable or failed. Falling back to rule-based regex extractor for {url}.")
-        return self._regex_fallback_extractor(title, url, text, page_data.get("links", []))
+        logger.info(f"Using rule-based regex fallback extractor for {url}.")
+        return self._regex_fallback_extractor(title, url, text, links)
+
+    def _call_groq(self, title: str, url: str, text: str) -> Optional[Dict]:
+        """Calls Groq Cloud API with OpenAI-compatible chat completion schema and JSON mode."""
+        try:
+            prompt = EXTRACTION_PROMPT.format(
+                title=title,
+                url=url,
+                text_snapshot=text[:6000] # Safe snapshot for context
+            )
+
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+
+            payload = {
+                "model": self.model_name,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.1,
+                "response_format": {"type": "json_object"}
+            }
+
+            resp = requests.post(self.endpoint, headers=headers, json=payload, timeout=self.timeout)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                content = data["choices"][0]["message"]["content"]
+                return json.loads(content)
+            else:
+                logger.warning(f"Groq API call failed with HTTP {resp.status_code}: {resp.text}")
+        except Exception as e:
+            logger.error(f"Exception during Groq API call: {e}")
+
+        return None
 
     def _call_ollama(self, title: str, url: str, text: str) -> Optional[Dict]:
+        """Calls local Ollama API for structured extraction."""
         try:
             prompt = EXTRACTION_PROMPT.format(
                 title=title,
@@ -47,7 +113,7 @@ class LLMExtractor:
                 }
             }
 
-            resp = requests.post(f"{self.endpoint}/api/generate", json=payload, timeout=2.0)
+            resp = requests.post(f"{self.endpoint}/api/generate", json=payload, timeout=self.timeout)
 
             if resp.status_code == 200:
                 response_json = resp.json()
@@ -61,6 +127,30 @@ class LLMExtractor:
             logger.debug(f"Ollama call exception: {e}")
             
         return None
+
+    def _normalize_extracted_data(self, data: Dict, title: str, url: str, links: list) -> Dict:
+        """Sanitizes and normalizes LLM output to guarantee expected schema."""
+        quotes = data.get("quotes") or {}
+        if not isinstance(quotes, dict):
+            quotes = {}
+
+        app_url = data.get("application_url")
+        if not app_url:
+            app_url = links[0] if links else url
+
+        normalized = {
+            "name": data.get("name") or title or "Scholarship Scheme",
+            "provider": data.get("provider") or "Official Provider",
+            "amount": data.get("amount"),
+            "eligibility_academic": data.get("eligibility_academic"),
+            "eligibility_income": data.get("eligibility_income"),
+            "eligibility_other": data.get("eligibility_other") or "Indian Students",
+            "deadline": data.get("deadline"),
+            "application_url": app_url,
+            "quotes": quotes,
+            "evidence_quotes": quotes
+        }
+        return normalized
 
     def _regex_fallback_extractor(self, title: str, url: str, text: str, links: list) -> Dict:
         """Deterministic regex-based fallback extractor for reliable, grounded extraction."""
@@ -111,6 +201,15 @@ class LLMExtractor:
         # Application URL
         app_url = links[0] if links else url
 
+        quotes_dict = {
+            "name": name_quote,
+            "provider": provider_quote,
+            "amount": amount_quote,
+            "eligibility_academic": academic_quote,
+            "eligibility_income": income_quote,
+            "deadline": deadline_quote
+        }
+
         return {
             "name": name,
             "provider": provider,
@@ -120,12 +219,6 @@ class LLMExtractor:
             "eligibility_other": "Indian Students",
             "deadline": deadline,
             "application_url": app_url,
-            "quotes": {
-                "name": name_quote,
-                "provider": provider_quote,
-                "amount": amount_quote,
-                "eligibility_academic": academic_quote,
-                "eligibility_income": income_quote,
-                "deadline": deadline_quote
-            }
+            "quotes": quotes_dict,
+            "evidence_quotes": quotes_dict
         }

@@ -11,14 +11,23 @@ ENV/
 
 # Environment Variables & Secrets
 .env
-.env.local
+.env.*
+!.env.example
 *.pem
 *.key
 
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+scholarships.db
+
 # Streamlit Local Cache & Config
-.streamlit/config.toml
 .streamlit/secrets.toml
 *.log
+
+# Browser & Crawler Artifacts
+.playwright/
 
 # Operating System & Editor Files
 .DS_Store
