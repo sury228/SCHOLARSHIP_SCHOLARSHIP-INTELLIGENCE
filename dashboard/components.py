@@ -35,14 +35,14 @@ def render_confidence_badge(score: float, status: str):
 
 def render_evidence_card(evidence_list: list):
     """Renders evidence traceability quotes in a black & gold luxury card theme."""
-    st.markdown("<h4 style='color: #D4AF37; font-family: \"Playfair Display\", serif; margin-top: 15px;'>🔍 Verification Evidence Traceability</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color: #D4AF37; font-family: \"Playfair Display\", serif; margin-top: 15px;'>Verification Evidence Traceability</h4>", unsafe_allow_html=True)
     if not evidence_list:
         st.info("No evidence records available for inspection.")
         return
 
     for item in evidence_list:
         is_valid = bool(item.get("is_verified_substring"))
-        icon = "✨" if is_valid else "⚠️"
+        status_tag = "<span style='color: #34D399; font-size: 11px; font-weight: 700; background: rgba(52,211,153,0.1); border: 1px solid #34D399; padding: 2px 6px; border-radius: 4px; margin-right: 6px;'>EXACT MATCH</span>" if is_valid else "<span style='color: #F87171; font-size: 11px; font-weight: 700; background: rgba(248,113,113,0.1); border: 1px solid #F87171; padding: 2px 6px; border-radius: 4px; margin-right: 6px;'>UNVERIFIED</span>"
         border_color = "#D4AF37" if is_valid else "#EF4444"
         bg_color = "rgba(20, 20, 24, 0.8)"
         quote_color = "#F3E5AB" if is_valid else "#F87171"
@@ -50,7 +50,7 @@ def render_evidence_card(evidence_list: list):
         st.markdown(
             f"""
             <div style="border-left: 3px solid {border_color}; background: {bg_color}; border-top: 1px solid rgba(212,175,55,0.15); border-right: 1px solid rgba(212,175,55,0.15); border-bottom: 1px solid rgba(212,175,55,0.15); padding: 14px 18px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
-                <div style="color: #D4AF37; font-weight: 600; font-size: 14px;">{icon} Field: <code style="color: #FCF6BA; background: rgba(212,175,55,0.1); padding: 2px 6px; border-radius: 4px;">{item.get('field_name')}</code></div>
+                <div style="color: #D4AF37; font-weight: 600; font-size: 14px;">{status_tag} Field: <code style="color: #FCF6BA; background: rgba(212,175,55,0.1); padding: 2px 6px; border-radius: 4px;">{item.get('field_name')}</code></div>
                 <div style="color: #E5E7EB; margin-top: 4px; font-size: 14px;">Extracted Value: <strong style="color: #FFFFFF;">{item.get('extracted_value')}</strong></div>
                 <div style="margin-top: 6px; font-size: 13px; color: {quote_color}; font-style: italic;">
                     Source Quote: "{item.get('source_quote')}"
@@ -62,7 +62,7 @@ def render_evidence_card(evidence_list: list):
 
 def render_change_timeline(history_records: list):
     """Renders historical change audit timeline with gold accents."""
-    st.markdown("<h4 style='color: #D4AF37; font-family: \"Playfair Display\", serif; margin-top: 15px;'>📜 Historical Audit Trail</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color: #D4AF37; font-family: \"Playfair Display\", serif; margin-top: 15px;'>Historical Audit Trail</h4>", unsafe_allow_html=True)
     if not history_records:
         st.info("No historical alterations logged for this scholarship.")
         return

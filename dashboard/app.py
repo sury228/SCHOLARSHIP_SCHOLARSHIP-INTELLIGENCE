@@ -19,8 +19,7 @@ from dashboard.components import (
 from crawler.source_classifier import classify_source_domain
 
 st.set_page_config(
-    page_title="Scholarship Intelligence | Premium Portal",
-    page_icon="👑",
+    page_title="Scholarship Intelligence",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -147,11 +146,11 @@ config = load_config()
 db_manager = DBManager(config["database"]["db_path"])
 
 # Header Section
-st.markdown("<h1 style='text-align: center; font-size: 38px; margin-bottom: 4px;'>👑 SCHOLARSHIP INTELLIGENCE</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #AA771C; font-size: 15px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 30px;'>Automated Verification & Anti-Hallucination Monitoring System</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; font-size: 38px; margin-bottom: 4px; letter-spacing: 1px;'>SCHOLARSHIP INTELLIGENCE</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #AA771C; font-size: 14px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 30px;'>Automated Verification & Anti-Hallucination Monitoring System</p>", unsafe_allow_html=True)
 
 # Sidebar Controls
-st.sidebar.markdown("<h3 style='font-size: 20px;'>👑 CONTROL PANEL</h3>", unsafe_allow_html=True)
+st.sidebar.markdown("<h3 style='font-size: 20px; letter-spacing: 0.5px;'>CONTROL PANEL</h3>", unsafe_allow_html=True)
 
 all_scholarships = db_manager.get_all_scholarships()
 
@@ -186,14 +185,14 @@ st.markdown("<br/>", unsafe_allow_html=True)
 
 # Main Dashboard Content
 if not filtered:
-    st.info("No scholarship records match the active gold filter criteria.")
+    st.info("No scholarship records match the active filter criteria.")
 else:
     col_list, col_divider, col_detail = st.columns([1.15, 0.05, 1.8], gap="medium")
     
     selected_id = st.session_state.get("selected_id", filtered[0]["id"] if filtered else None)
     
     with col_list:
-        st.markdown("<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px; margin-bottom: 16px;'>📋 Listings</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px; margin-bottom: 16px;'>Listings</h3>", unsafe_allow_html=True)
         for sch in filtered:
             badge_html = get_confidence_badge_html(sch['confidence_score'] or 0.0, sch['status'])
             is_active = (selected_id == sch['id'])
@@ -209,19 +208,19 @@ else:
                     {badge_html}
                 </div>
                 <p style="margin: 0 0 8px 0; font-size: 13px; color: #AA771C;">
-                    🏛️ Provider: <strong style="color: #F3E5AB;">{sch['provider']}</strong> | 🌐 <span style="color: #D4AF37;">{classify_source_domain(sch['official_source_url'])}</span>
+                    Provider: <strong style="color: #F3E5AB;">{sch['provider']}</strong> | <span style="color: #D4AF37;">{classify_source_domain(sch['official_source_url'])}</span>
                 </p>
                 <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212, 175, 55, 0.15); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; color: #D1D5DB;">
-                    💰 Amount: <strong style="color: #FFD700;">{sch['amount'] or 'N/A'}</strong> &nbsp;|&nbsp; 📅 Deadline: <strong style="color: #FFD700;">{sch['deadline'] or 'N/A'}</strong>
+                    Amount: <strong style="color: #FFD700;">{sch['amount'] or 'N/A'}</strong> &nbsp;|&nbsp; Deadline: <strong style="color: #FFD700;">{sch['deadline'] or 'N/A'}</strong>
                 </div>
                 <div style="margin-bottom: 12px; word-break: break-all;">
                     <a href="{sch['official_source_url']}" target="_blank" style="color: #D4AF37; text-decoration: none; font-weight: 600; font-size: 12.5px;">
-                        🔗 <span style="text-decoration: underline; color: #FCF6BA;">{sch['official_source_url']}</span> ➔
+                        Official Link: <span style="text-decoration: underline; color: #FCF6BA;">{sch['official_source_url']}</span> ➔
                     </a>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                btn_label = "👉 Currently Inspecting" if is_active else "🔍 Inspect Details"
+                btn_label = "Currently Inspecting" if is_active else "Inspect Details"
                 if st.button(btn_label, key=f"btn_{sch['id']}", use_container_width=True, disabled=is_active):
                     st.session_state["selected_id"] = sch["id"]
                     st.rerun()
@@ -237,9 +236,9 @@ else:
         if selected_id:
             sch_detail = db_manager.get_scholarship_by_id(selected_id)
             if sch_detail:
-                st.markdown(f"<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px; margin-bottom: 16px;'>📌 Inspection: {sch_detail['name']}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px; margin-bottom: 16px;'>Inspection: {sch_detail['name']}</h3>", unsafe_allow_html=True)
                 
-                tab_info, tab_evidence, tab_history = st.tabs(["💎 Attributes", "✨ Evidence Quotes", "📜 Audit Log"])
+                tab_info, tab_evidence, tab_history = st.tabs(["Attributes", "Evidence Quotes", "Audit Log"])
                 
                 with tab_info:
                     st.markdown(f"""
@@ -265,7 +264,7 @@ else:
 
 # Sidebar Execution Button
 st.sidebar.markdown("---")
-if st.sidebar.button("👑 Trigger Crawler Pipeline"):
+if st.sidebar.button("Trigger Crawler Pipeline"):
     st.sidebar.warning("Executing crawler pipeline...")
     from pipeline import ScholarshipPipeline
     pipeline = ScholarshipPipeline()
