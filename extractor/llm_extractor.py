@@ -12,13 +12,13 @@ class LLMExtractor:
     def __init__(
         self,
         provider: str = "groq",
-        model_name: str = "llama-3.3-70b-versatile",
+        model_name: str = "openai/gpt-oss-120b",
         api_key: Optional[str] = None,
         endpoint: Optional[str] = None,
         timeout: float = 30.0
     ):
         self.provider = (provider or "groq").lower()
-        self.model_name = model_name or ("llama-3.3-70b-versatile" if self.provider == "groq" else "qwen2.5:3b")
+        self.model_name = model_name or ("openai/gpt-oss-120b" if self.provider == "groq" else "qwen2.5:3b")
         self.api_key = api_key or os.environ.get("GROQ_API_KEY", "").strip()
         self.timeout = timeout
 

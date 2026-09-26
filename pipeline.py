@@ -68,14 +68,15 @@ class ScholarshipPipeline:
             # 2. Scrape Webpage
             page_data = self.scraper.fetch_page(url)
 
-            # Fallback to mock page if live fetch failed (ensures reliable demo/offline testing)
+            # Fallback to mock page ONLY if this URL is explicitly a known seed mock URL
             if not page_data.get("is_success") and use_mock_if_offline:
-                logger.info(f"Live request to {url} failed or offline. Using mock schema generator for testing.")
                 mocks = WebScraper.get_mock_scholarship_pages()
-                page_data = mocks.get(url) or list(mocks.values())[0]
+                if url in mocks:
+                    logger.info(f"Using offline seed snapshot for known test URL: {url}")
+                    page_data = mocks[url]
 
-            if not page_data or not page_data.get("cleaned_text"):
-                logger.warning(f"Skipping {url}: No usable text snapshot retrieved.")
+            if not page_data or not page_data.get("is_success") or not page_data.get("cleaned_text"):
+                logger.warning(f"Skipping {url}: Live fetch failed or no usable content returned.")
                 continue
 
             # 3. Classify Domain

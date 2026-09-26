@@ -46,4 +46,24 @@ class ScholarshipDiscovery:
         if not url or not url.startswith("http"):
             return False
         parsed = urlparse(url)
-        return bool(parsed.netloc)
+        if not parsed.netloc:
+            return False
+            
+        domain = parsed.netloc.lower()
+        full_url = url.lower()
+        
+        # Block obvious non-scholarship domains
+        blocked_keywords = [
+            "motorcycle", "bike", "automobile", "cars", "casino", "poker",
+            "clothing", "shoes", "flights", "hotel", "travel", "amazon", "flipkart",
+            "aliexpress", "ebay", "walmart", "fashion"
+        ]
+        if any(kw in domain or kw in parsed.path.lower() for kw in blocked_keywords):
+            return False
+            
+        # Prioritize relevant domains/paths
+        relevant_indicators = [
+            "scholarship", "grant", "fellowship", "education", "student",
+            ".gov.in", ".nic.in", ".ac.in", ".edu.in", ".edu", ".org", "trust", "foundation", "ugc"
+        ]
+        return any(ind in full_url for ind in relevant_indicators)
