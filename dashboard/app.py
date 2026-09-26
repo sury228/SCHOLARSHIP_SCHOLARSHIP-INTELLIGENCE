@@ -10,7 +10,12 @@ if str(BASE_DIR) not in sys.path:
 
 from config.settings import load_config
 from database.db_manager import DBManager
-from dashboard.components import render_confidence_badge, render_evidence_card, render_change_timeline
+from dashboard.components import (
+    render_confidence_badge,
+    render_evidence_card,
+    render_change_timeline,
+    get_confidence_badge_html
+)
 from crawler.source_classifier import classify_source_domain
 
 st.set_page_config(
@@ -181,35 +186,58 @@ st.markdown("<br/>", unsafe_allow_html=True)
 if not filtered:
     st.info("No scholarship records match the active gold filter criteria.")
 else:
-    col_list, col_detail = st.columns([1.1, 1.9])
+    col_list, col_divider, col_detail = st.columns([1.15, 0.05, 1.8], gap="medium")
+    
+    selected_id = st.session_state.get("selected_id", filtered[0]["id"] if filtered else None)
     
     with col_list:
-        st.markdown("<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px;'>📋 Listings</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px; margin-bottom: 16px;'>📋 Listings</h3>", unsafe_allow_html=True)
         for sch in filtered:
+            badge_html = get_confidence_badge_html(sch['confidence_score'] or 0.0, sch['status'])
+            is_active = (selected_id == sch['id'])
+            active_border = "border: 1.5px solid #D4AF37; box-shadow: 0 0 15px rgba(212, 175, 55, 0.25);" if is_active else ""
+            
             with st.container():
                 st.markdown(f"""
-                <div class="opportunity-card">
-                    <h4 style="margin:0 0 6px 0; font-size: 18px; color: #FFFFFF;">{sch['name']}</h4>
-                    <p style="margin:0 0 8px 0; font-size: 13px; color: #AA771C;">
-                        🏛️ Provider: <strong style="color:#F3E5AB;">{sch['provider']}</strong> | 🌐 {classify_source_domain(sch['official_source_url'])}
+                <div class="opportunity-card" style="{active_border}">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+                        <h4 style="margin: 0; font-size: 17px; color: #FFFFFF; font-weight: 600; line-height: 1.35;">{sch['name']}</h4>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        {badge_html}
+                    </div>
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #AA771C;">
+                        🏛️ Provider: <strong style="color: #F3E5AB;">{sch['provider']}</strong> | 🌐 <span style="color: #D4AF37;">{classify_source_domain(sch['official_source_url'])}</span>
                     </p>
+                    <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212, 175, 55, 0.15); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; color: #D1D5DB;">
+                        💰 Amount: <strong style="color: #FFD700;">{sch['amount'] or 'N/A'}</strong> &nbsp;|&nbsp; 📅 Deadline: <strong style="color: #FFD700;">{sch['deadline'] or 'N/A'}</strong>
+                    </div>
+                    <div style="margin-bottom: 4px; word-break: break-all;">
+                        <a href="{sch['official_source_url']}" target="_blank" style="color: #D4AF37; text-decoration: none; font-weight: 600; font-size: 12.5px;">
+                            🔗 <span style="text-decoration: underline; color: #FCF6BA;">{sch['official_source_url']}</span> ➔
+                        </a>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                render_confidence_badge(sch['confidence_score'], sch['status'])
-                st.markdown(f"<span style='color:#D1D5DB; font-size:13.5px;'>💰 Amount: <strong style='color:#FFD700;'>{sch['amount'] or 'N/A'}</strong> | 📅 Deadline: <strong style='color:#FFD700;'>{sch['deadline'] or 'N/A'}</strong></span>", unsafe_allow_html=True)
-                st.markdown(f"<div style='margin-top:8px;'><a href='{sch['official_source_url']}' target='_blank' style='color:#D4AF37; text-decoration:none; font-weight:600; font-size:13px;'>🌐 Official Link ➔</a></div>", unsafe_allow_html=True)
-                
-                if st.button("Inspect Details", key=f"btn_{sch['id']}"):
+                btn_label = "👉 Inspecting Now" if is_active else "🔍 Inspect Details"
+                if st.button(btn_label, key=f"btn_{sch['id']}", use_container_width=True):
                     st.session_state["selected_id"] = sch["id"]
-                st.markdown("<hr style='margin: 16px 0;'/>", unsafe_allow_html=True)
+                    st.rerun()
+                st.markdown("<div style='margin-bottom: 14px;'></div>", unsafe_allow_html=True)
+
+    with col_divider:
+        st.markdown("""
+        <div style="display: flex; justify-content: center; height: 100%; min-height: 700px; padding-top: 20px;">
+            <div style="border-left: 2px solid rgba(212, 175, 55, 0.3); height: 100%; width: 1px;"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col_detail:
-        selected_id = st.session_state.get("selected_id", filtered[0]["id"] if filtered else None)
         if selected_id:
             sch_detail = db_manager.get_scholarship_by_id(selected_id)
             if sch_detail:
-                st.markdown(f"<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px;'>📌 Inspection: {sch_detail['name']}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<h3 style='font-size: 22px; border-bottom: 2px solid #D4AF37; padding-bottom: 6px; margin-bottom: 16px;'>📌 Inspection: {sch_detail['name']}</h3>", unsafe_allow_html=True)
                 
                 tab_info, tab_evidence, tab_history = st.tabs(["💎 Attributes", "✨ Evidence Quotes", "📜 Audit Log"])
                 
@@ -226,11 +254,11 @@ else:
                         <p><strong style="color:#D4AF37;">Official URL:</strong> <a href="{sch_detail['official_source_url']}" target="_blank" style="color:#FCF6BA;">{sch_detail['official_source_url']}</a></p>
                     </div>
                     """, unsafe_allow_html=True)
-
+                
                 with tab_evidence:
                     evidence_list = db_manager.get_evidence_for_scholarship(selected_id)
                     render_evidence_card(evidence_list)
-
+                
                 with tab_history:
                     history_list = db_manager.get_change_history(selected_id)
                     render_change_timeline(history_list)

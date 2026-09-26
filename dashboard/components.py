@@ -1,7 +1,7 @@
 import streamlit as st
 
-def render_confidence_badge(score: float, status: str):
-    """Renders a sleek luxury gold/dark badge for status and confidence score."""
+def get_confidence_badge_html(score: float, status: str) -> str:
+    """Returns HTML for a sleek luxury gold/dark badge for status and confidence score."""
     if status == "VERIFIED" or score >= 95.0:
         badge_bg = "linear-gradient(135deg, #BF953F 0%, #FCF6BA 50%, #B38728 100%)"
         text_color = "#0B0C10"
@@ -19,12 +19,15 @@ def render_confidence_badge(score: float, status: str):
         text_color = "#F3E5AB"
         border = "1px solid rgba(212, 175, 55, 0.3)"
 
+    return f"""<span style="background: {badge_bg}; color: {text_color}; border: {border}; padding: 3px 12px; border-radius: 20px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); display: inline-block;">{status} — {score:.1f}%</span>"""
+
+def render_confidence_badge(score: float, status: str):
+    """Renders a sleek luxury gold/dark badge for status and confidence score."""
+    badge_html = get_confidence_badge_html(score, status)
     st.markdown(
         f"""
         <div style="display: inline-block; margin-top: 4px; margin-bottom: 8px;">
-            <span style="background: {badge_bg}; color: {text_color}; border: {border}; padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
-                {status} — {score:.1f}%
-            </span>
+            {badge_html}
         </div>
         """,
         unsafe_allow_html=True
