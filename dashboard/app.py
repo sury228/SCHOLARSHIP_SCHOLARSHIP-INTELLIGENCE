@@ -109,17 +109,19 @@ st.markdown("""
         color: #F3E5AB !important;
     }
 
-    /* Card Containers */
-    .opportunity-card {
-        background: linear-gradient(145deg, #121216 0%, #0A0A0D 100%);
-        border: 1px solid rgba(212, 175, 55, 0.2);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    /* Bordered Container Cards */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background: linear-gradient(145deg, #141419 0%, #0D0D12 100%) !important;
+        border: 1px solid rgba(212, 175, 55, 0.25) !important;
+        border-radius: 12px !important;
+        padding: 6px !important;
+        margin-bottom: 16px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+        transition: all 0.25s ease !important;
     }
-    .opportunity-card:hover {
-        border-color: rgba(212, 175, 55, 0.5);
+    div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        border-color: rgba(212, 175, 55, 0.6) !important;
+        box-shadow: 0 6px 25px rgba(212, 175, 55, 0.15) !important;
     }
 
     /* Tabs Styling */
@@ -195,36 +197,34 @@ else:
         for sch in filtered:
             badge_html = get_confidence_badge_html(sch['confidence_score'] or 0.0, sch['status'])
             is_active = (selected_id == sch['id'])
-            active_border = "border: 1.5px solid #D4AF37; box-shadow: 0 0 15px rgba(212, 175, 55, 0.25);" if is_active else ""
             
-            with st.container():
+            with st.container(border=True):
+                active_chip = "<span style='color: #FFD700; font-size: 11px; font-weight: 700; background: rgba(212,175,55,0.15); border: 1px solid #D4AF37; padding: 2px 8px; border-radius: 10px;'>SELECTED</span>" if is_active else ""
                 st.markdown(f"""
-                <div class="opportunity-card" style="{active_border}">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
-                        <h4 style="margin: 0; font-size: 17px; color: #FFFFFF; font-weight: 600; line-height: 1.35;">{sch['name']}</h4>
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        {badge_html}
-                    </div>
-                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #AA771C;">
-                        🏛️ Provider: <strong style="color: #F3E5AB;">{sch['provider']}</strong> | 🌐 <span style="color: #D4AF37;">{classify_source_domain(sch['official_source_url'])}</span>
-                    </p>
-                    <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212, 175, 55, 0.15); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; color: #D1D5DB;">
-                        💰 Amount: <strong style="color: #FFD700;">{sch['amount'] or 'N/A'}</strong> &nbsp;|&nbsp; 📅 Deadline: <strong style="color: #FFD700;">{sch['deadline'] or 'N/A'}</strong>
-                    </div>
-                    <div style="margin-bottom: 4px; word-break: break-all;">
-                        <a href="{sch['official_source_url']}" target="_blank" style="color: #D4AF37; text-decoration: none; font-weight: 600; font-size: 12.5px;">
-                            🔗 <span style="text-decoration: underline; color: #FCF6BA;">{sch['official_source_url']}</span> ➔
-                        </a>
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+                    <h4 style="margin: 0; font-size: 17px; color: #FFFFFF; font-weight: 600; line-height: 1.35;">{sch['name']}</h4>
+                    {active_chip}
+                </div>
+                <div style="margin-bottom: 8px;">
+                    {badge_html}
+                </div>
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #AA771C;">
+                    🏛️ Provider: <strong style="color: #F3E5AB;">{sch['provider']}</strong> | 🌐 <span style="color: #D4AF37;">{classify_source_domain(sch['official_source_url'])}</span>
+                </p>
+                <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212, 175, 55, 0.15); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; color: #D1D5DB;">
+                    💰 Amount: <strong style="color: #FFD700;">{sch['amount'] or 'N/A'}</strong> &nbsp;|&nbsp; 📅 Deadline: <strong style="color: #FFD700;">{sch['deadline'] or 'N/A'}</strong>
+                </div>
+                <div style="margin-bottom: 12px; word-break: break-all;">
+                    <a href="{sch['official_source_url']}" target="_blank" style="color: #D4AF37; text-decoration: none; font-weight: 600; font-size: 12.5px;">
+                        🔗 <span style="text-decoration: underline; color: #FCF6BA;">{sch['official_source_url']}</span> ➔
+                    </a>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                btn_label = "👉 Inspecting Now" if is_active else "🔍 Inspect Details"
-                if st.button(btn_label, key=f"btn_{sch['id']}", use_container_width=True):
+                btn_label = "👉 Currently Inspecting" if is_active else "🔍 Inspect Details"
+                if st.button(btn_label, key=f"btn_{sch['id']}", use_container_width=True, disabled=is_active):
                     st.session_state["selected_id"] = sch["id"]
                     st.rerun()
-                st.markdown("<div style='margin-bottom: 14px;'></div>", unsafe_allow_html=True)
 
     with col_divider:
         st.markdown("""
